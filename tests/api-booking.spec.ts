@@ -1,27 +1,27 @@
 import { test, expect, request } from '@playwright/test';
 
-test.describe('Проверка бронирований', () => {
-  test('Успешное получение конкретной брони', async ({ request }) => {
+test.describe('Booking API tests', () => {
+  test('Successfully fetch a specific booking', async ({ request }) => {
     const response = await request.get('/booking/1');
     expect(response.status()).toBe(200);
     const body = await response.json();
     expect(body).toHaveProperty('firstname');
   });
-  test('Проверка типов данных', async ({ request }) => {
+  test('Validate data types in booking response', async ({ request }) => {
     const response = await request.get('/booking/2');
     expect(response.status()).toBe(200);
     const body = await response.json();
     expect(typeof body.totalprice).toBe('number');
     expect(typeof body.firstname).toBe('string');
   });
-  test('Фильтрация по данным', async ({request}) => {
+  test('Filter bookings by check-in date', async ({request}) => {
     const response = await request.get('/booking?checkin=2014-03-13');
     expect(response.status()).toBe(200);
     const body = await response.json();
     expect(Array.isArray(body)).toBeTruthy();
     expect(body.length).toBeGreaterThan(0);
   });
-  test('Проверка вложенного объекта', async ({request}) => {
+  test('Validate nested bookingdates object', async ({request}) => {
     const response = await request.get('/booking/5');
     expect(response.status()).toBe(200);
     const body = await response.json();
@@ -29,17 +29,17 @@ test.describe('Проверка бронирований', () => {
     expect(body.bookingdates).toHaveProperty('checkin');
     expect(body.bookingdates).toHaveProperty('checkout');
   });   
-  test('Негативный тест на несуществующий ID', async ({request}) => {
+  test('Negative test for non-existing booking ID', async ({request}) => {
     const response = await request.get('booking/99999');
     expect(response.status()).toBe(404);
   });
-  test('Математическая проверка стоимости', async ({request}) =>{
-const response = await request.get('booking/5');
-expect(response.status()).toBe(200);
-const body = await response.json();
-expect(body.totalprice).toBeGreaterThan(0);
+  test('Check totalprice is greater than zero', async ({request}) =>{
+    const response = await request.get('booking/5');
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.totalprice).toBeGreaterThan(0);
   });
-  test('Успешное создание нового бронирования', async ({ request }) => {
+  test('Successfully create a new booking', async ({ request }) => {
     const bookingData = {
       firstname: 'Dmitriy',
       lastname: 'Volkov',
@@ -60,11 +60,11 @@ expect(body.totalprice).toBeGreaterThan(0);
     expect(typeof body.bookingid).toBe('number');
     expect(body.booking).toHaveProperty('firstname', 'Dmitriy');
     expect(body.booking.totalprice).toBe(250);
-        console.log('Создана бронь с ID:', body.bookingid);
+    console.log('Booking created with ID:', body.bookingid);
   });
-test('Создание бронирования и проверка его через GET', async ({request}) => {
+  test('Create a booking and verify via GET', async ({request}) => {
     const bookingData = {
-        firstname: 'Alex',
+      firstname: 'Alex',
       lastname: 'E2E',
       totalprice: 500,
       depositpaid: false,
@@ -86,5 +86,5 @@ test('Создание бронирования и проверка его че�
     expect(getBody.lastname).toBe('E2E');
     expect(getBody.totalprice).toBe(500);
     expect(getBody.depositpaid).toBe(false);
-});
+  });
 });
