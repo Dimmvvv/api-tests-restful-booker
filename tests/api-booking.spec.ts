@@ -1,26 +1,10 @@
 import { test, expect, request } from '@playwright/test';
 
-// 1. Описываем группу тестов
 test.describe('Проверка бронирований', () => {
-
-  // 2. Создаем сам тест (асинхронную функцию). 
-  // Объект { request } внутри круглых скобок — это встроенный в Playwright "инструмент", 
-  // который умеет делать HTTP-запросы. Playwright сам дает его нам.
   test('Успешное получение конкретной брони', async ({ request }) => {
-    
-    // ДЕЙСТВИЕ: Говорим инструменту request: "Сделай GET-запрос на этот адрес".
-    // Ждем (await), пока сервер ответит, и сохраняем всё в переменную response.
     const response = await request.get('/booking/1');
-
-    // ПРОВЕРКА 1: Проверяем, что сервер ответил успешно (код 200)
     expect(response.status()).toBe(200);
-
-    // ДЕЙСТВИЕ 2: Извлекаем из ответа чистые данные (JSON) в виде обычного объекта JS.
-    // Это тоже занимает время, поэтому пишем await.
     const body = await response.json();
-
-    // ПРОВЕРКА 2: Проверяем, что внутри объекта в поле firstname лежит строка.
-    // Метод toHaveProperty проверяет, что такое свойство вообще есть в объекте.
     expect(body).toHaveProperty('firstname');
   });
   test('Проверка типов данных', async ({ request }) => {
@@ -55,4 +39,52 @@ expect(response.status()).toBe(200);
 const body = await response.json();
 expect(body.totalprice).toBeGreaterThan(0);
   });
+  test('Успешное создание нового бронирования', async ({ request }) => {
+    const bookingData = {
+      firstname: 'Dmitriy',
+      lastname: 'Volkov',
+      totalprice: 250,
+      depositpaid: true,
+      bookingdates: {
+        checkin: '2026-08-10',
+        checkout: '2026-08-15'
+      },
+      additionalneeds: 'Breakfast'
+    };
+    const response = await request.post('/booking', {
+      data: bookingData
+    });
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body).toHaveProperty('bookingid');
+    expect(typeof body.bookingid).toBe('number');
+    expect(body.booking).toHaveProperty('firstname', 'Dmitriy');
+    expect(body.booking.totalprice).toBe(250);
+        console.log('Создана бронь с ID:', body.bookingid);
+  });
+test('Создание бронирования и проверка его через GET', async ({request}) => {
+    const bookingData = {
+        firstname: 'Alex',
+      lastname: 'E2E',
+      totalprice: 500,
+      depositpaid: false,
+      bookingdates: {
+        checkin: '2026-09-01',
+        checkout: '2026-09-10'
+      },
+      additionalneeds: 'Late check-in'
+    };
+    const postResponse = await request.post('booking/', {data:bookingData});
+    expect(postResponse.status()).toBe(200);
+    const postBody = await postResponse.json();
+    const createId = postBody.bookingid;
+    expect(createId).toBeDefined();
+    const getResponse = await request.get(`booking/${createId}`);
+    expect(getResponse.status()).toBe(200);
+    const getBody = await getResponse.json();
+    expect(getBody.firstname).toBe('Alex');
+    expect(getBody.lastname).toBe('E2E');
+    expect(getBody.totalprice).toBe(500);
+    expect(getBody.depositpaid).toBe(false);
+});
 });
