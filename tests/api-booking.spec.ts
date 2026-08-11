@@ -87,4 +87,61 @@ test.describe('Booking API tests', () => {
     expect(getBody.totalprice).toBe(500);
     expect(getBody.depositpaid).toBe(false);
   });
+  test('E2E should create a booking, authenticate, edit and delete it successfully', async ({request}) =>{
+    const bookingDataNew = {
+    firstname: 'John',
+      lastname: 'Smith',
+      totalprice: 2500,
+      depositpaid: true,        
+      bookingdates: {
+        checkin: '2026-08-10',
+        checkout: '2026-08-19'
+    },
+    additionalneeds: 'None'      
+  };
+  const createResponse = await request.post('/booking',{data:bookingDataNew});
+  expect (createResponse.status()).toBe(200);
+  const createBody = await createResponse.json();
+  const targetId = createBody.bookingid;
+  const authRes = await request.post('/auth', {
+    data: {
+      username: 'admin',
+      password: 'password123'
+    }
+  });
+  expect(authRes.status()).toBe(200);
+    const authBody = await authRes.json();
+    const tokenValue = authBody.token;
+    expect(tokenValue).toBeDefined();
+    const bookingDataNewPut = {
+        firstname: 'Johnatan',
+          lastname: 'Smiths',
+          totalprice: 2506,
+          depositpaid: true,        
+          bookingdates: {
+            checkin: '2026-08-11',
+            checkout: '2026-08-20'
+        },
+        additionalneeds: 'Breakfast'      
+      };
+    const putResponse = await request.put(`booking/${targetId}`, {
+        headers: {
+          'Cookie': `token=${tokenValue}`
+        },
+        data: bookingDataNewPut
+      });
+      expect(putResponse.status()).toBe(200);
+      const putBody = await putResponse.json();
+      expect(putBody.lastname).toBe('Smiths');
+      expect(putBody.totalprice).toBe(2506);
+      expect(putBody.depositpaid).toBe(true);
+      const deleteRes = await request.delete(`/booking/${targetId}`, {
+        headers: {
+          'Cookie': `token=${tokenValue}`
+        }
+      });
+      expect(deleteRes.status()).toBe(201); 
+        const verifyRes = await request.get(`/booking/${targetId}`);
+      expect(verifyRes.status()).toBe(404);
+    });
 });
