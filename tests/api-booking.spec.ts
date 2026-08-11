@@ -87,7 +87,7 @@ test.describe('Booking API tests', () => {
     expect(getBody.totalprice).toBe(500);
     expect(getBody.depositpaid).toBe(false);
   });
-  test('E2E should create a booking, authenticate, edit and delete it successfully', async ({request}) =>{
+  test('E2E creating a booking, authenticate, edit and delete it successfully', async ({request}) =>{
     const bookingDataNew = {
     firstname: 'John',
       lastname: 'Smith',
