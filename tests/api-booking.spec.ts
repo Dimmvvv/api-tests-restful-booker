@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { BookingClient } from './BookingClient';
+import { BookingPayloads } from '../test-data/bookingPayloads';
+
 
 test.describe('Booking API tests', () => {
   test('Successfully fetch a specific booking', async ({ request }) => {
@@ -48,39 +50,19 @@ test.describe('Booking API tests', () => {
   });
   test('Successfully create a new booking', async ({ request }) => {
     const bookingClient = new BookingClient(request);
-    const bookingData = {
-      firstname: 'Dmitriy',
-      lastname: 'Volkov',
-      totalprice: 250,
-      depositpaid: true,
-      bookingdates: {
-        checkin: '2026-08-10',
-        checkout: '2026-08-15'
-      },
-      additionalneeds: 'Breakfast'
-    };
+    const bookingData = BookingPayloads.createValidBooking();
     const response = await bookingClient.createBooking(bookingData);
     expect(response.status()).toBe(200);
     const body = await response.json();
     expect(body).toHaveProperty('bookingid');
-    expect(typeof body.bookingid).toBe('number');
-    expect(body.booking).toHaveProperty('firstname', 'Dmitriy');
-    expect(body.booking.totalprice).toBe(250);
+    expect(body.booking.firstname).toBe(bookingData.firstname);
+    expect(body.booking.lastname).toBe(bookingData.lastname);
+    expect(body.booking.totalprice).toBe(bookingData.totalprice);
     console.log('Booking created with ID:', body.bookingid);
   });
   test('Create a booking and verify via GET', async ({request}) => {
     const bookingClient = new BookingClient(request);
-    const bookingData = {
-      firstname: 'Alex',
-      lastname: 'E2E',
-      totalprice: 500,
-      depositpaid: false,
-      bookingdates: {
-        checkin: '2026-09-01',
-        checkout: '2026-09-10'
-      },
-      additionalneeds: 'Late check-in'
-    };
+    const bookingData = BookingPayloads.createValidBooking();
     const postResponse = await bookingClient.createBooking(bookingData);
     expect(postResponse.status()).toBe(200);
     const postBody = await postResponse.json();
@@ -89,10 +71,10 @@ test.describe('Booking API tests', () => {
     const getResponse = await bookingClient.getBookingById(createId);
     expect(getResponse.status()).toBe(200);
     const getBody = await getResponse.json();
-    expect(getBody.firstname).toBe('Alex');
-    expect(getBody.lastname).toBe('E2E');
-    expect(getBody.totalprice).toBe(500);
-    expect(getBody.depositpaid).toBe(false);
+    expect(getBody.firstname).toBe(bookingData.firstname);
+    expect(getBody.lastname).toBe(bookingData.lastname);
+    expect(getBody.totalprice).toBe(bookingData.totalprice);
+    expect(getBody.depositpaid).toBe((bookingData.depositpaid));
   });
   test('E2E creating a booking, authenticate, edit and delete it successfully', async ({request}) =>{
     const bookingClient = new BookingClient(request);
