@@ -41,6 +41,11 @@ test.describe('Booking API tests', () => {
     const response = await bookingClient.getBookingById(99999);
     expect(response.status()).toBe(404);
   });
+  test('Negative test for non-existing booking ID2', async ({request}) => {
+    const bookingClient = new BookingClient(request);
+    const response = await bookingClient.getBookingById(0);
+    expect(response.status()).toBe(404);
+  });
   test('Check totalprice is greater than zero', async ({request}) =>{
     const bookingClient = new BookingClient(request);
     const response = await bookingClient.getBookingById(5);
