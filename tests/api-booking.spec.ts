@@ -83,17 +83,7 @@ test.describe('Booking API tests', () => {
   });
   test('E2E creating a booking, authenticate, edit and delete it successfully', async ({request}) =>{
     const bookingClient = new BookingClient(request);
-    const bookingDataNew = {
-    firstname: 'John',
-      lastname: 'Smith',
-      totalprice: 2500,
-      depositpaid: true,        
-      bookingdates: {
-        checkin: '2026-08-10',
-        checkout: '2026-08-19'
-    },
-    additionalneeds: 'None'      
-  };
+    const bookingDataNew = BookingPayloads.createValidBooking();
   const createResponse = await bookingClient.createBooking(bookingDataNew);
   expect (createResponse.status()).toBe(200);
   const createBody = await createResponse.json();
@@ -103,23 +93,13 @@ test.describe('Booking API tests', () => {
     const authBody = await authRes.json();
     const tokenValue = authBody.token;
     expect(tokenValue).toBeDefined();
-    const bookingDataNewPut = {
-        firstname: 'Johnatan',
-          lastname: 'Smiths',
-          totalprice: 2506,
-          depositpaid: true,        
-          bookingdates: {
-            checkin: '2026-08-11',
-            checkout: '2026-08-20'
-        },
-        additionalneeds: 'Breakfast'      
-      };
+    const bookingDataNewPut = BookingPayloads.createValidBooking();
     const putResponse = await bookingClient.updateBooking(targetId,tokenValue, bookingDataNewPut)
       expect(putResponse.status()).toBe(200);
       const putBody = await putResponse.json();
-      expect(putBody.lastname).toBe('Smiths');
-      expect(putBody.totalprice).toBe(2506);
-      expect(putBody.depositpaid).toBe(true);
+      expect(putBody.lastname).toBe(bookingDataNewPut.lastname);
+      expect(putBody.totalprice).toBe(bookingDataNewPut.totalprice);
+      expect(putBody.depositpaid).toBe(bookingDataNewPut.depositpaid);
       const deleteRes = await bookingClient.deleteBooking(targetId,tokenValue)
       expect(deleteRes.status()).toBe(201); 
         const verifyRes = await bookingClient.getBookingById(targetId);
