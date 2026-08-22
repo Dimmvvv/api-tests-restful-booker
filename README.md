@@ -8,63 +8,85 @@ This is a professional automated testing framework built with **TypeScript** and
 * **Language:** TypeScript
 * **Test Runner:** Playwright Test
 * **CI/CD:** GitHub Actions
-* **AI Tooling:** Cursor IDE & Codeium 
 
 ---
 
 ## 🏗️ Framework Architecture
 
-The project follows a robust **Three-Layer Architecture** (similar to the Page Object Model in UI testing) to ensure high maintainability and prevent hardcoding:
+The project follows a layered architecture (similar in spirit to the Page Object Model used in UI testing) to keep tests maintainable and free of hardcoded logic:
 
-1. **API Client Layer (`/api`)**: Encapsulates raw HTTP methods (`GET`, `POST`, `PUT`, `DELETE`). The tests interact only with high-level methods like `bookingClient.createBooking(payload)`, making the framework independent of endpoint URL modifications.
-2. **Test Data Layer (`/test-data`)**: Implements dynamic payload generation using native TypeScript features. Generates unique text strings, random pricing, and boolean logic on every execution to prevent test collisions in shared environments.
-3. **Test Layer (`/tests`)**: Contains clean, easy-to-read specification files focused strictly on business logic, HTTP status validations, and strict data type verifications.
+1. **API Client (`tests/BookingClient.ts`)**: Encapsulates raw HTTP methods (`GET`, `POST`, `PUT`, `DELETE`) behind high-level methods like `bookingClient.createBooking(payload)`. Tests never call `request.get/post/put/delete` directly, so an endpoint URL change only needs to be updated in one place.
+2. **Test Data (`test-data/bookingPayloads.ts`)**: Generates dynamic payloads (random names, prices, boolean flags) on every run to avoid test collisions in a shared public sandbox, plus fixed invalid payloads for negative testing.
+3. **Fixtures (`fixtures/booking.fixture.ts`)**: Uses Playwright's `test.extend()` to compose reusable, dependency-aware setup and teardown logic:
+   - `bookingClient` — provides a ready-to-use API client instance.
+   - `authToken` — authenticates once and hands back a valid token.
+   - `createdBookingId` — creates a booking before the test runs and automatically deletes it afterward, so tests that only need a booking as background data don't have to manage its lifecycle manually.
+
+   Tests request only the fixtures they actually need — a read-only test skips `authToken` entirely, while a lifecycle test (create → update → delete) manages the booking manually instead of using `createdBookingId`, since the lifecycle itself is what's being tested.
+4. **Tests (`tests/*.spec.ts`)**: Clean, focused spec files containing business logic, HTTP status assertions, and data validation — with setup/teardown boilerplate delegated to fixtures.
 
 ---
 
 ## 🧪 Automated Test Scenarios
 
-The framework covers both positive integration flows and edge-case negative testing:
+### 📅 Core Booking Flow (`tests/api-booking.spec.ts`)
+* Fetching bookings by ID, filtering by check-in date, nested object validation.
+* Full CRUD lifecycle: create → authenticate → update (`PUT`) → delete → verify `404 Not Found`.
 
-### 📅 Booking API (`tests/api-booking.spec.ts`)
-* **Full CRUD Lifecycle**: A 5-step end-to-end integration scenario that creates a booking, authenticates via token, updates data using `PUT`, executes deletion (`DELETE`), and validates system state with `404 Not Found`.
-* **Data Filtering**: Query parameter testing via date parameters (`/booking?checkin=...`).
-* **Data Integrity**: Deep object structure validation and mathematical checks (e.g., pricing greater than zero).
+### 🔍 Negative & Edge Cases (`tests/api-booking-negative.spec.ts`)
+* Invalid payloads (empty required fields, negative pricing) — documents actual API behavior rather than assuming it.
+* Boundary values: zero pricing, missing `bookingdates`, inverted check-in/check-out order.
 
-### 🔐 Authentication & Edge Cases (`tests/api-auth.spec.ts`)
-* **Positive Auth**: Verification of secure token generation and data type constraints.
-* **Negative Auth**: Payload validation for improper authorization attempts (verifying error response payloads).
-* **Security Validation**: Guarding modification actions to ensure unauthorized requests return `403 Forbidden`.
+### 🔧 Update Scenarios (`tests/api-booking-update.spec.ts`)
+* Valid update flow with field-level verification that data actually changed.
+* Update attempts against non-existent booking IDs.
+
+### 🧩 Fixtures Composition Practice (`tests/api-booking-fixtures-practice.spec.ts`)
+* Selective fixture usage based on what each test actually needs.
+* Manual vs. fixture-managed resource lifecycles, including a deliberate double-DELETE scenario that validates the fixture's teardown handles an already-deleted resource gracefully.
+
+### 🔐 Authentication (`tests/api-auth.spec.ts`)
+* Token generation, invalid credentials, and guarding update actions against missing/invalid tokens.
+
+---
+
+## 🔎 Known API Quirks (discovered via testing)
+
+- Invalid booking payloads (empty `firstname`, negative `totalprice`) return `500 Internal Server Error` with a **plain-text** body, not a JSON error — tests handle this with `response.text()` instead of assuming `response.json()` will parse.
+- Updating a non-existent booking ID returns `405 Method Not Allowed`, not `404 Not Found`.
+- Deleting a non-existent booking ID also returns `405 Method Not Allowed`.
+- No server-side validation exists for check-in/check-out date order — a booking with `checkout` earlier than `checkin` is accepted with `200 OK`.
+- Invalid login credentials return `200 OK` with a `{ reason: "Bad credentials" }` body, not `401 Unauthorized`.
 
 ---
 
 ## 🚀 CI/CD Pipeline
 
-The framework is fully integrated into **GitHub Actions** (`.github/workflows/playwright.yml`). 
-* The pipeline automatically spins up a clean **Ubuntu Linux** environment upon every `push` or `pull_request` to the main branch.
-* It provisions runtime environments, executes the continuous integration checklist, and archives the Playwright HTML test execution report as an artifact.
+The framework is fully integrated into **GitHub Actions** (`.github/workflows/playwright.yml`).
+* The pipeline automatically spins up a clean **Ubuntu Linux** environment on every `push` or `pull_request` to the `main` branch.
+* It installs dependencies, runs the full test suite, and archives the Playwright HTML report as a build artifact.
 
 ---
 
 ## ⚙️ How to Run Locally
 
 1. **Clone the repository:**
-   ```bash
+```bash
    git clone https://github.com/Dimmvvv/api-tests-restful-booker.git
    cd api-tests-restful-booker
-   ```
+```
 
 2. **Install dependencies:**
-   ```bash
+```bash
    npm ci
-   ```
+```
 
 3. **Execute all API tests:**
-   ```bash
+```bash
    npx playwright test
-   ```
+```
 
 4. **View HTML test execution report:**
-   ```bash
+```bash
    npx playwright show-report
-   ```
+```
