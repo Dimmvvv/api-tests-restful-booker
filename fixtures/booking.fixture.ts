@@ -28,7 +28,7 @@ export const test = base.extend<BookingFixtures>({
     await use(bookingId);
 
     const deleteRes = await bookingClient.deleteBooking(bookingId, authToken);
-    if (deleteRes.status() !== 201 && deleteRes.status() !== 404) {
+    if (deleteRes.status() !== 201 && deleteRes.status() !== 404 && deleteRes.status() !== 405) {
       console.warn(`Teardown: unexpected status ${deleteRes.status()} for id ${bookingId}`);
     }
   },
