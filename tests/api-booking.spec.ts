@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { BookingClient } from './BookingClient';
 import { BookingPayloads } from '../test-data/bookingPayloads';
+import { bookingResponseSchema } from '../types/bookingSchemas';
+
 
 
 test.describe('Booking API tests', () => {
@@ -19,6 +21,13 @@ test.describe('Booking API tests', () => {
         expect(typeof body.totalprice).toBe('number');
         expect(typeof body.firstname).toBe('string');
     });
+    test('Validate full booking JSON schema via Zod', async ({ request }) => {
+        const bookingClient = new BookingClient(request);
+        const response = await bookingClient.getBookingById(3);
+        expect(response.status()).toBe(200);
+        const body = await response.json();
+        expect(() => bookingResponseSchema.parse(body)).not.toThrow();
+      });
     test('Filter bookings by check-in date', async ({ request }) => {
         const bookingClient = new BookingClient(request);
         const response = await bookingClient.getBookingByDate('2014-03-13');
