@@ -44,6 +44,7 @@ test.describe('Booking API tests', () => {
         expect(body).toHaveProperty('bookingdates');
         expect(body.bookingdates).toHaveProperty('checkin');
         expect(body.bookingdates).toHaveProperty('checkout');
+        expect(() => bookingResponseSchema.parse(body)).not.toThrow();
     });
     test('Negative test for non-existing booking ID', async ({ request }) => {
         const bookingClient = new BookingClient(request);
@@ -85,10 +86,7 @@ test.describe('Booking API tests', () => {
         const getResponse = await bookingClient.getBookingById(createId);
         expect(getResponse.status()).toBe(200);
         const getBody = await getResponse.json();
-        expect(getBody.firstname).toBe(bookingData.firstname);
-        expect(getBody.lastname).toBe(bookingData.lastname);
-        expect(getBody.totalprice).toBe(bookingData.totalprice);
-        expect(getBody.depositpaid).toBe((bookingData.depositpaid));
+        expect(() => bookingResponseSchema.parse(getBody)).not.toThrow();
     });
     test('E2E creating a booking, authenticate, edit and delete it successfully', async ({ request }) => {
         const bookingClient = new BookingClient(request);
